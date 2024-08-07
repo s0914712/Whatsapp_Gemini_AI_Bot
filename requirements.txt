@@ -1,5 +1,3 @@
 Flask
 google-generativeai
 pymupdf
-openai
-requests
