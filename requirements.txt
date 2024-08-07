@@ -3,7 +3,9 @@ google-generativeai
 pymupdf
 openai
 os
-import requests
-import re
-import urllib
-import ast
+requests
+re
+urllib
+ast
+kaleido
+bs4
