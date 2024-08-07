@@ -3,7 +3,3 @@ google-generativeai
 pymupdf
 openai
 requests
-urllib
-ast
-kaleido
-bs4
