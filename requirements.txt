@@ -2,7 +2,6 @@ Flask
 google-generativeai
 pymupdf
 openai
-os
 requests
 re
 urllib
