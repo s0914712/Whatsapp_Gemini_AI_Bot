@@ -3,7 +3,6 @@ google-generativeai
 pymupdf
 openai
 requests
-re
 urllib
 ast
 kaleido
