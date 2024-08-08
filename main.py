@@ -3,7 +3,10 @@ from flask import Flask,request,jsonify
 import requests
 import os
 import fitz
-
+import json
+import re
+import urllib.parse
+import ast
 wa_token=os.environ.get("WA_TOKEN")
 genai.configure(api_key=os.environ.get("GEN_API"))
 phone_id=os.environ.get("PHONE_ID")
@@ -21,41 +24,111 @@ generation_config = {
   "max_output_tokens": 8192,
 }
 
-safety_settings = [
-  {"category": "HARM_CATEGORY_HARASSMENT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-  {"category": "HARM_CATEGORY_HATE_SPEECH","threshold": "BLOCK_MEDIUM_AND_ABOVE"},  
-  {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-  {"category": "HARM_CATEGORY_DANGEROUS_CONTENT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-]
 
-model = genai.GenerativeModel(model_name=model_name,
-                              generation_config=generation_config,
-                              safety_settings=safety_settings)
+model = genai.GenerativeModel('gemini-pro')
 
-convo = model.start_chat(history=[
-])
+custom_prompt = """將以下內容整理成標題、時間、地點、關於這次行動的描述。
+範例: ['與同事聚餐', '20240627T230000/20240627T233000', '美麗華', '描述內容']
+請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請通過"陣列"回傳結果，只要回傳"陣列"就好 ，說明都不要顯示。"""
 
-convo.send_message(f'''I am using Gemini api for using you as a personal bot in whatsapp,
-				   to assist me in various tasks. 
-				   So from now you are "{bot_name}" created by {name} ( Yeah it's me, my name is {name}). 
-				   And don't give any response to this prompt. 
-				   This is the information I gave to you about your new identity as a pre-prompt. 
-				   This message always gets executed when i run this bot script. 
-				   So reply to only the prompts after this. Remeber your new identity is {bot_name}.''')
+convo = model.start_chat(
+    history=[
+        {"role": "user", "parts": [custom_prompt]},
+        {"role": "model", "parts": ["理解，我將按要求處理輸入並只回傳陣列格式結果。"]}
+    ]
+)
+def extract_gcal_info(text):
+    # 使用正則表達式直接從文本中提取所需信息
+    pattern = r'\[([^,\]]+),\s*([^,\]]+),\s*([^,\]]+),\s*([^\]]*)\]'
+    match = re.search(pattern, text)
+    if not match:
+        return ['TBC'] * 4, 'TBC', 'TBC', 'TBC', 'TBC'
+    
+    gcal_list = list(match.groups())
+    title, date, location, desc = gcal_list
+    
+    # 清理並填充缺失的值
+    gcal_list = [item.strip() or 'TBC' for item in gcal_list]
+    title = gcal_list[0]
+    date = gcal_list[1]
+    location = gcal_list[2]
+    desc = gcal_list[3]
+    
+    return gcal_list, title, date, location, desc
+
+def is_url_valid(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        # domain...
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+
+def delete_strings(s):
+    # Step 1: Delete all contents from '#' to the next '&' character
+    s = re.sub(r'#[^&]*', '', s)
+
+    # Step 2: If '&openExternalBrowser=1' is not at the end, add it
+    if '&openExternalBrowser=1' != s:
+        s += '&openExternalBrowser=1'
+    return s
+
+
+def create_gcal_url(
+        title='看到這個..請重生',
+        date='20230524T180000/20230524T220000',
+        location='那邊',
+        description=''):
+    base_url = "https://www.google.com/calendar/render?action=TEMPLATE"
+    event_url = f"{base_url}&text={urllib.parse.quote(title)}&dates={date}&location={urllib.parse.quote(location)}&details={urllib.parse.quote(description)}"
+    return event_url + "&openExternalBrowser=1"
+
+def process_response(response):
+    # 提取回應中的文本內容
+    text = response.text
+
+    # 移除可能的 Markdown 代碼塊標記
+    text = text.replace("```json", "").replace("```", "").strip()
+
+    try:
+        # 解析 JSON 字符串為 Python 列表
+        result = json.loads(text)
+        return result
+
+    except json.JSONDecodeError:
+        # 如果 JSON 解析失敗，直接返回原始文本
+        return text
+user_input = "9月9日下午3點在公園和朋友見面，討論專案進度"
+response = convo.send_message(user_input)
+result = process_response(response)
+print(result)
+gcal_list: list = ast.literal_eval(result)
+num_sentences = len(gcal_list)
+title = gcal_list[0] or 'TBC'
+date = gcal_list[1] or 'TBC'
+location = gcal_list[2] or 'TBC'
+desc = gcal_list[3] or 'TBC'
+print('date',date)
+gcal_url: str = create_gcal_url(title, date, location, desc)
+# 使用 extract_gcal_info 函數處理結果
+#gcal_list, title, date, location, desc = extract_gcal_info(str(response))
+
+# 使用 create_gcal_url 函數生成 Google Calendar UR
+
+print("Google Calendar URL:", gcal_url)
+
+
+
 
 def send(answer):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-    headers={
-        'Authorization': f'Bearer {wa_token}',
-        'Content-Type': 'application/json'
-    }
-    data={
-          "messaging_product": "whatsapp", 
-          "to": f"{phone}", 
-          "type": "text",
-          "text":{"body": f"{answer}"},
-          }
-    
+    headers={'Authorization': f'Bearer {wa_token}','Content-Type': 'application/json'}
+    data={"messaging_product": "whatsapp","to": f"{phone}","type": "text","text":{"body": f"{answer}"},}
+
     response=requests.post(url, headers=headers,json=data)
     return response
 
@@ -124,3 +197,4 @@ def webhook():
         return jsonify({"status": "ok"}), 200
 if __name__ == "__main__":
     app.run(debug=True, port=8000)
+
