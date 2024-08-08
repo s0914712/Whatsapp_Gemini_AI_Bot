@@ -131,10 +131,10 @@ def process_user_input(user_input):
     model = genai.GenerativeModel('gemini-pro')
 
     # 定義自定義提示
-    custom_prompt = """你是一個可以將文字解析轉換成python 陣列格式的bot，
-    收到以下提示： 將以下內容整理成標題、時間、地點、描述。
-    範例: ['與同事聚餐', 20240627T230000/20240627T233000, '美麗華', '其他內容描述處']
-    請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請只回傳陣列，不要加任何其他說明或格式。"""
+    custom_prompt = """You are a bot that can parse text and convert it into a Python array format.
+Given the following prompt: Organize the following content into "title", "time", "location", and "description".
+Example: ['Dinner with colleagues(titile)', 20240627T230000/20240627T233000, 'Megastart', 'description content like with friend...etc(details)']
+Ensure the time format is YYYYMMDDTHHmmss, and if the end time is not explicitly provided, default it to 1 hour after the start time. The current year is 2024. Please only return the array, without any additional explanations or formatting.。"""
 
     # 啟動對話
     convo = model.start_chat(
@@ -217,9 +217,9 @@ def remove(*file_paths):
             os.remove(file)
         else:pass
 
-user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
-response = process_user_input(user_input)
-send(response)
+#user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
+#response = process_user_input(user_input)
+#send(response)
 
 @app.route("/",methods=["GET","POST"])
 def index():
