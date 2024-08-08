@@ -133,7 +133,7 @@ def process_user_input(user_input):
     # 定義自定義提示
     custom_prompt = """You are a bot that can parse text and convert it into a Python array format.
 Given the following prompt: Organize the following content into "title", "time", "location", and "description".
-Example: ['Dinner with colleagues(titile)', 20240627T230000/20240627T233000, 'Megastart', 'description content']
+Example: ['Dinner with colleagues', 20240627T230000/20240627T233000, 'Megastart', 'description content']
 Ensure the time format is YYYYMMDDTHHmmss, and if the end time is not explicitly provided, default it to 1 hour after the start time. The current year is 2024. Please only return the array, without any additional explanations or formatting.the description content is user`s input。"""
 
     # 啟動對話
