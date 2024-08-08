@@ -7,6 +7,7 @@ import json
 import re
 import urllib.parse
 import ast
+
 wa_token=os.environ.get("WA_TOKEN")
 genai.configure(api_key=os.environ.get("GEN_API"))
 phone_id=os.environ.get("PHONE_ID")
@@ -29,47 +30,50 @@ def extract_gcal_info(text):
     match = re.search(pattern, text)
     if not match:
         return ['TBC'] * 4, 'TBC', 'TBC', 'TBC', 'TBC'
-    
+
     gcal_list = list(match.groups())
-    gcal_list = [item.strip().strip("'") for item in gcal_list]  # 移除開頭和結尾的空白和單引號
+    gcal_list = [item.strip() or 'TBC' for item in gcal_list]
     title, date, location, desc = gcal_list
-    
+
     # 處理日期格式
     date = process_date(date)
-    
+
     return gcal_list, title, date, location, desc
 
 def process_date(date_str):
-    # 移除所有單引號
-    date_str = date_str.replace("'", "")
-    
     # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
     if not date_str or date_str == 'TBC':
         now = datetime.now()
         end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
         return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
-    
+
     # 如果日期字符串已經包含結束時間，直接返回
     if '/' in date_str:
+        start, end = date_str.split('/')
+        print(f"{start}/{end}")
         return date_str
-    
+
     # 否則，假設結束時間為開始時間加一小時
     try:
         start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
         end = start + timedelta(hours=1)
+        print(f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
         return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
     except ValueError:
         # 如果日期格式不正確，返回當前時間加一小時
         now = datetime.now()
         end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
         return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
 
 def create_gcal_url(title='看到這個..請重生', date='20230524T180000/20230524T220000', location='那邊', description=''):
-    base_url = "https://www.google.com/calendar/render?action=TEMPLATE"
-    event_url = f"{base_url}&text={urllib.parse.quote(title)}&dates={date}&location={urllib.parse.quote(location)}&details={urllib.parse.quote(description)}"
+  #https://calendar.google.com/calendar/u/0/r/eventedit?text=%E9%87%8D%E8%A6%81%E6%9C%83%E8%AD%B0&dates=20240101T090000/20240101T100000&location=%E5%8F%B0%E5%8C%97101&details=%E8%A8%8E%E8%AB%96%E5%B9%B4%E5%BA%A6%E9%A0%90%E7%AE%97&add=colleague@example.com
+    base_url = "https://calendar.google.com/calendar/u/0/r/eventedit?"
+    event_url = f"{base_url}text={urllib.parse.quote(title)}dates={date}location={urllib.parse.quote(location)}details={urllib.parse.quote(description)}"
     return event_url + "&openExternalBrowser=1"
 
-# ... [其餘函數保持不變] ...
+
 
 def process_user_input(user_input):
     # 設置模型
@@ -78,7 +82,7 @@ def process_user_input(user_input):
     # 定義自定義提示
     custom_prompt = """你是一個可以將文字解析轉換成python 陣列格式的bot，
     收到以下提示： 將以下內容整理成標題、時間、地點、描述。
-    範例: ['與同事聚餐', '20240627T230000/20240627T233000', '美麗華', '其他內容放置處']
+    範例: ['與同事聚餐', 20240627T230000/20240627T233000, '美麗華', '其他內容描述處']
     請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請只回傳陣列，不要加任何其他說明或格式。"""
 
     # 啟動對話
@@ -101,7 +105,30 @@ def process_user_input(user_input):
     # 創建一個包含事件詳情和 Google Calendar URL 的回覆消息
     reply_message = f"Event Details:\nTitle: {title}\nDate: {date}\nLocation: {location}\nDescription: {desc}\n\nAdd to Google Calendar: {gcal_url}"
 
-    return reply_messag
+    return reply_message
+
+def is_url_valid(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        # domain...
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+
+def delete_strings(s):
+    # Step 1: Delete all contents from '#' to the next '&' character
+    s = re.sub(r'#[^&]*', '', s)
+
+    # Step 2: If '&openExternalBrowser=1' is not at the end, add it
+    if '&openExternalBrowser=1' != s:
+        s += '&openExternalBrowser=1'
+    return s
+
+
 
 def send(answer):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
@@ -116,6 +143,7 @@ def remove(*file_paths):
         if os.path.exists(file):
             os.remove(file)
         else:pass
+
 
 @app.route("/",methods=["GET","POST"])
 def index():
@@ -136,6 +164,7 @@ def webhook():
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             if data["type"] == "text":
                 user_input = data["text"]["body"]
+                user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
                 response = process_user_input(user_input)
                 send(response)
             else:
