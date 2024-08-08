@@ -11,37 +11,184 @@ phone=os.environ.get("PHONE_NUMBER")
 name="Your name or nickname" #The bot will consider this person as its owner or creator
 bot_name="Give a name to your bot" #This will be the name of your bot, eg: "Hello I am Astro Bot"
 model_name="gemini-1.5-flash-latest" #Switch to "gemini-1.0-pro" or any free model, if "gemini-1.5-flash" becomes paid in future.
-
 app=Flask(__name__)
-
 generation_config = {
   "temperature": 1,
   "top_p": 0.95,
   "top_k": 0,
   "max_output_tokens": 8192,
 }
+def process_date(date_str):
+    # 移除所有單引號
+    date_str = date_str.replace("'", "")
 
-safety_settings = [
-  {"category": "HARM_CATEGORY_HARASSMENT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-  {"category": "HARM_CATEGORY_HATE_SPEECH","threshold": "BLOCK_MEDIUM_AND_ABOVE"},  
-  {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-  {"category": "HARM_CATEGORY_DANGEROUS_CONTENT","threshold": "BLOCK_MEDIUM_AND_ABOVE"},
-]
+    # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
+    if not date_str or date_str == 'TBC':
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
 
-model = genai.GenerativeModel(model_name=model_name,
-                              generation_config=generation_config,
-                              safety_settings=safety_settings)
+    # 如果日期字符串已經包含結束時間，直接返回
+    if '/' in date_str:
+        return date_str
 
-convo = model.start_chat(history=[
-])
+    # 否則，假設結束時間為開始時間加一小時
+    try:
+        start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
+        end = start + timedelta(hours=1)
+        return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+    except ValueError:
+        # 如果日期格式不正確，返回當前時間加一小時
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+	    
+def extract_gcal_info(text):
+    pattern = r'\[([^,\]]+),\s*([^,\]]+),\s*([^,\]]+),\s*([^\]]*)\]'
+    match = re.search(pattern, text)
+    if not match:
+        return ['TBC'] * 4, 'TBC', 'TBC', 'TBC', 'TBC'
 
-convo.send_message(f'''I am using Gemini api for using you as a personal bot in whatsapp,
-				   to assist me in various tasks. 
-				   So from now you are "{bot_name}" created by {name} ( Yeah it's me, my name is {name}). 
-				   And don't give any response to this prompt. 
-				   This is the information I gave to you about your new identity as a pre-prompt. 
-				   This message always gets executed when i run this bot script. 
-				   So reply to only the prompts after this. Remeber your new identity is {bot_name}.''')
+    gcal_list = list(match.groups())
+    gcal_list = [item.strip().strip("'") for item in gcal_list]  # 移除開頭和結尾的空白和單引號
+    title, date, location, desc = gcal_list
+
+    # 處理日期格式
+    date = process_date(date)
+
+    return gcal_list, title, date, location, desc
+
+def process_date(date_str):
+    # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
+    if not date_str or date_str == 'TBC':
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+
+    # 如果日期字符串已經包含結束時間，直接返回
+    if '/' in date_str:
+        start, end = date_str.split('/')
+        print(f"{start}/{end}")
+        return date_str
+
+    # 否則，假設結束時間為開始時間加一小時
+    try:
+        start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
+        end = start + timedelta(hours=1)
+        print(f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+    except ValueError:
+        # 如果日期格式不正確，返回當前時間加一小時
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+
+
+def process_date(date_str):
+    # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
+    if not date_str or date_str == 'TBC':
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+
+    # 如果日期字符串已經包含結束時間，直接返回
+    if '/' in date_str:
+        start, end = date_str.split('/')
+        print(f"{start}/{end}")
+        return date_str
+
+    # 否則，假設結束時間為開始時間加一小時
+    try:
+        start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
+        end = start + timedelta(hours=1)
+        print(f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+    except ValueError:
+        # 如果日期格式不正確，返回當前時間加一小時
+        now = datetime.now()
+        end = now + timedelta(hours=1)
+        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
+        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
+
+def create_gcal_url(title='看到這個..請重生', date='20230524T180000/20230524T220000', location='那邊', description=''):
+  #https://calendar.google.com/calendar/u/0/r/eventedit?text=%E9%87%8D%E8%A6%81%E6%9C%83%E8%AD%B0&dates=20240101T090000/20240101T100000&location=%E5%8F%B0%E5%8C%97101&details=%E8%A8%8E%E8%AB%96%E5%B9%B4%E5%BA%A6%E9%A0%90%E7%AE%97&add=colleague@example.com
+    base_url = "https://calendar.google.com/calendar/u/0/r/eventedit?"
+    event_url = f"{base_url}&text={urllib.parse.quote(title)}&dates={date}&location={urllib.parse.quote(location)}&details={urllib.parse.quote(description)}"
+    return event_url + "&openExternalBrowser=1"
+	
+
+
+def process_user_input(user_input):
+    # 設置模型
+    model = genai.GenerativeModel('gemini-pro')
+
+    # 定義自定義提示
+    custom_prompt = """你是一個可以將文字解析轉換成python 陣列格式的bot，
+    收到以下提示： 將以下內容整理成標題、時間、地點、描述。
+    範例: ['與同事聚餐', 20240627T230000/20240627T233000, '美麗華', '其他內容描述處']
+    請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請只回傳陣列，不要加任何其他說明或格式。"""
+
+    # 啟動對話
+    convo = model.start_chat(
+        history=[
+            {"role": "user", "parts": [custom_prompt]},
+            {"role": "model", "parts": ["理解，我將按要求處理輸入並只回傳陣列格式結果。"]}
+        ]
+    )
+
+    response = convo.send_message(user_input)
+    result = process_response(response)
+
+    # 使用 extract_gcal_info 函數處理結果
+    gcal_list, title, date, location, desc = extract_gcal_info(result)
+
+    # 使用 create_gcal_url 函數生成 Google Calendar URL
+    gcal_url = create_gcal_url(title, date, location, desc)
+
+    # 創建一個包含事件詳情和 Google Calendar URL 的回覆消息
+    reply_message = f"Event Details:\nTitle: {title}\nDate: {date}\nLocation: {location}\nDescription: {desc}\n\nAdd to Google Calendar: {gcal_url}"
+
+    return reply_message
+
+def is_url_valid(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        # domain...
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+	
+def process_response(response):
+    return response.text.strip()
+def is_url_valid(url):
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        # domain...
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+
+def delete_strings(s):
+    # Step 1: Delete all contents from '#' to the next '&' character
+    s = re.sub(r'#[^&]*', '', s)
+
+    # Step 2: If '&openExternalBrowser=1' is not at the end, add it
+    if '&openExternalBrowser=1' != s:
+        s += '&openExternalBrowser=1'
+    return s
+
+
 
 def send(answer):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
@@ -65,6 +212,10 @@ def remove(*file_paths):
             os.remove(file)
         else:pass
 
+user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
+response = process_user_input(user_input)
+send(response)
+
 @app.route("/",methods=["GET","POST"])
 def index():
     return "Bot"
@@ -84,8 +235,8 @@ def webhook():
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             if data["type"] == "text":
                 prompt = data["text"]["body"]
-                convo.send_message(prompt)
-                send(convo.last.text)
+                response = process_user_input(prompt)
+                send(response)
             else:
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
                 headers = {'Authorization': f'Bearer {wa_token}'}
