@@ -24,19 +24,6 @@ generation_config = {
   "max_output_tokens": 8192,
 }
 
-
-model = genai.GenerativeModel('gemini-pro')
-
-custom_prompt = """將以下內容整理成標題、時間、地點、關於這次行動的描述。
-範例: ['與同事聚餐', '20240627T230000/20240627T233000', '美麗華', '描述內容']
-請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請通過"陣列"回傳結果，只要回傳"陣列"就好 ，說明都不要顯示。"""
-
-convo = model.start_chat(
-    history=[
-        {"role": "user", "parts": [custom_prompt]},
-        {"role": "model", "parts": ["理解，我將按要求處理輸入並只回傳陣列格式結果。"]}
-    ]
-)
 def extract_gcal_info(text):
     # 使用正則表達式直接從文本中提取所需信息
     pattern = r'\[([^,\]]+),\s*([^,\]]+),\s*([^,\]]+),\s*([^\]]*)\]'
@@ -102,27 +89,38 @@ def process_response(response):
     except json.JSONDecodeError:
         # 如果 JSON 解析失敗，直接返回原始文本
         return text
-user_input = "9月9日下午3點在公園和朋友見面，討論專案進度"
-response = convo.send_message(user_input)
-result = process_response(response)
-print(result)
-gcal_list: list = ast.literal_eval(result)
-num_sentences = len(gcal_list)
-title = gcal_list[0] or 'TBC'
-date = gcal_list[1] or 'TBC'
-location = gcal_list[2] or 'TBC'
-desc = gcal_list[3] or 'TBC'
-print('date',date)
-gcal_url: str = create_gcal_url(title, date, location, desc)
-# 使用 extract_gcal_info 函數處理結果
-#gcal_list, title, date, location, desc = extract_gcal_info(str(response))
 
-# 使用 create_gcal_url 函數生成 Google Calendar UR
+def process_user_input(user_input):
+    # 設置模型
+    model = genai.GenerativeModel('gemini-pro')
 
-print("Google Calendar URL:", gcal_url)
+    # 定義自定義提示
+    custom_prompt = """你是一個可以將文字解析轉換成python 陣列格式的bot，
+    收到以下提示： 將以下內容整理成標題、時間、地點、描述。
+    範例: ['與同事聚餐', '20240627T230000/20240627T233000', '美麗華', '其他內容放置處']
+    請確保時間格式為 YYYYMMDDTHHmmss，如果沒有明確的結束時間，預設為開始時間後1小時。 現在是 2024 年。請只回傳陣列，不要加任何其他說明或格式。"""
 
+    # 啟動對話
+    convo = model.start_chat(
+        history=[
+            {"role": "user", "parts": [custom_prompt]},
+            {"role": "model", "parts": ["理解，我將按要求處理輸入並只回傳陣列格式結果。"]}
+        ]
+    )
 
+    response = convo.send_message(user_input)
+    result = process_response(response)
 
+    # 使用 extract_gcal_info 函數處理結果
+    gcal_list, title, date, location, desc = extract_gcal_info(result)
+
+    # 使用 create_gcal_url 函數生成 Google Calendar URL
+    gcal_url = create_gcal_url(title, date, location, desc)
+
+    # 創建一個包含事件詳情和 Google Calendar URL 的回覆消息
+    reply_message = f"Event Details:\nTitle: {title}\nDate: {date}\nLocation: {location}\nDescription: {desc}\n\nAdd to Google Calendar: {gcal_url}"
+
+    return reply_message
 
 def send(answer):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
@@ -156,9 +154,9 @@ def webhook():
         try:
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             if data["type"] == "text":
-                prompt = data["text"]["body"]
-                convo.send_message(prompt)
-                send(convo.last.text,gcal_url)
+                user_input = data["text"]["body"]
+                response = process_user_input(user_input)
+                send(response)
             else:
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
                 headers = {'Authorization': f'Bearer {wa_token}'}
