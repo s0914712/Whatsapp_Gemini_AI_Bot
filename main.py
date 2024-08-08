@@ -164,7 +164,6 @@ def webhook():
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             if data["type"] == "text":
                 user_input = data["text"]["body"]
-                user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
                 response = process_user_input(user_input)
                 send(response)
             else:
@@ -205,4 +204,3 @@ def webhook():
         return jsonify({"status": "ok"}), 200
 if __name__ == "__main__":
     app.run(debug=True, port=8000)
-
