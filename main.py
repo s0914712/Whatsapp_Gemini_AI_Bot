@@ -140,7 +140,7 @@ Ensure the time format is YYYYMMDDTHHmmss, and if the end time is not explicitly
     convo = model.start_chat(
         history=[
             {"role": "user", "parts": [custom_prompt]},
-            {"role": "model", "parts": ["理解，我將按要求處理輸入並只回傳陣列格式結果。"]}
+            {"role": "model", "parts": ["acknowledged,I will translate to array in python"]}
         ]
     )
 
