@@ -217,9 +217,9 @@ def remove(*file_paths):
             os.remove(file)
         else:pass
 
-user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
-response = process_user_input(user_input)
-send(response)
+#user_input='我9月6日0900要去台北吃飯，會有很多的貴賓'
+#response = process_user_input(user_input)
+#send(response)
 
 @app.route("/",methods=["GET","POST"])
 def index():
