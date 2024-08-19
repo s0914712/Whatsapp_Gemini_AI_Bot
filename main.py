@@ -23,30 +23,7 @@ generation_config = {
   "top_k": 0,
   "max_output_tokens": 8192,
 }
-def process_date(date_str):
-    # 移除所有單引號
-    date_str = date_str.replace("'", "")
 
-    # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
-    if not date_str or date_str == 'TBC':
-        now = datetime.now()
-        end = now + timedelta(hours=1)
-        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
-
-    # 如果日期字符串已經包含結束時間，直接返回
-    if '/' in date_str:
-        return date_str
-
-    # 否則，假設結束時間為開始時間加一小時
-    try:
-        start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
-        end = start + timedelta(hours=1)
-        return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
-    except ValueError:
-        # 如果日期格式不正確，返回當前時間加一小時
-        now = datetime.now()
-        end = now + timedelta(hours=1)
-        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
 	    
 def extract_gcal_info(text):
     pattern = r'\[([^,\]]+),\s*([^,\]]+),\s*([^,\]]+),\s*([^\]]*)\]'
@@ -63,32 +40,6 @@ def extract_gcal_info(text):
 
     return gcal_list, title, date, location, desc
 
-def process_date(date_str):
-    # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
-    if not date_str or date_str == 'TBC':
-        now = datetime.now()
-        end = now + timedelta(hours=1)
-        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
-        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
-
-    # 如果日期字符串已經包含結束時間，直接返回
-    if '/' in date_str:
-        start, end = date_str.split('/')
-        print(f"{start}/{end}")
-        return date_str
-
-    # 否則，假設結束時間為開始時間加一小時
-    try:
-        start = datetime.strptime(date_str, '%Y%m%dT%H%M%S')
-        end = start + timedelta(hours=1)
-        print(f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
-        return f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
-    except ValueError:
-        # 如果日期格式不正確，返回當前時間加一小時
-        now = datetime.now()
-        end = now + timedelta(hours=1)
-        print(f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}")
-        return f"{now.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}"
 
 
 def process_date(date_str):
