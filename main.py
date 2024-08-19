@@ -195,7 +195,7 @@ def delete_strings(s):
 
 
 
-def send(answer):
+def send(answern,phone):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers={
         'Authorization': f'Bearer {wa_token}',
@@ -238,10 +238,12 @@ def webhook():
     elif request.method == "POST":
         try:
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
+	    webhook_data = request.get_json()
+            sender_phone = extract_sender_phone(webhook_data)
             if data["type"] == "text":
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
-                send(response)
+                send(response,sender_phone)
             else:
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
                 headers = {'Authorization': f'Bearer {wa_token}'}
