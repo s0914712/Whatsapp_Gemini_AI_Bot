@@ -237,9 +237,9 @@ def webhook():
             return "Failed", 403
     elif request.method == "POST":
         try:
-            data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
-	    webhook_data = request.get_json()
-            sender_phone = extract_sender_phone(webhook_data)
+		data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
+		webhook_data = request.get_json()
+		sender_phone = extract_sender_phone(webhook_data)
             if data["type"] == "text":
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
