@@ -195,7 +195,7 @@ def delete_strings(s):
 
 
 
-def send(answern,phone):
+def send(answer,phone):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers={
         'Authorization': f'Bearer {wa_token}',
