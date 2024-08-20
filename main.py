@@ -203,7 +203,6 @@ def remove(*file_paths):
 #@app.route("/",methods=["GET","POST"])
 #def index():
 #    return "Bot"
-
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
     if request.method == "GET":
@@ -216,51 +215,51 @@ def webhook():
             return "Failed", 403
     elif request.method == "POST":
         try:
-            data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             webhook_data = request.get_json()
+            data = webhook_data["entry"][0]["changes"][0]["value"]["messages"][0]
             sender_phone = extract_sender_phone(webhook_data)
+            
             if data["type"] == "text":
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
                 sendtest("abcd", sender_phone)
-                send(response, sender_phone)
+                send(response)  # 修復：移除多餘的參數
             else:
+                # 處理媒體消息
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
                 headers = {'Authorization': f'Bearer {wa_token}'}
                 media_response = requests.get(media_url_endpoint, headers=headers)
                 media_url = media_response.json()["url"]
                 media_download_response = requests.get(media_url, headers=headers)
-                if data["type"] == "audio":
-                    filename = "/tmp/temp_audio.mp3"
-                elif data["type"] == "image":
-                    filename = "/tmp/temp_image.jpg"
+                
+                if data["type"] in ["audio", "image"]:
+                    filename = f"/tmp/temp_{data['type']}.{'mp3' if data['type'] == 'audio' else 'jpg'}"
+                    with open(filename, "wb") as temp_media:
+                        temp_media.write(media_download_response.content)
+                    file = genai.upload_file(path=filename, display_name="tempfile")
+                    response = model.generate_content(["What is this", file])
+                    answer = response._result.candidates[0].content.parts[0].text
+                    send(f"This is a {data['type']} message from user. Here's what I understand: {answer}")
+                    remove(filename)
                 elif data["type"] == "document":
                     doc = fitz.open(stream=media_download_response.content, filetype="pdf")
-                    for _, page in enumerate(doc):
+                    for page in doc:
                         destination = "/tmp/temp_image.jpg"
                         pix = page.get_pixmap()
                         pix.save(destination)
                         file = genai.upload_file(path=destination, display_name="tempfile")
                         response = model.generate_content(["What is this", file])
                         answer = response._result.candidates[0].content.parts[0].text
-                        convo.send_message(f"This message is created by an llm model based on the image prompt of user, reply to the user based on this: {answer}")
-                        send(convo.last.text)
+                        send(f"This is a document. Here's what I understand from page {page.number + 1}: {answer}")
                         remove(destination)
                 else:
-                    send("This format is not Supported by the bot ☹")
-                with open(filename, "wb") as temp_media:
-                    temp_media.write(media_download_response.content)
-                file = genai.upload_file(path=filename, display_name="tempfile")
-                response = model.generate_content(["What is this", file])
-                answer = response._result.candidates[0].content.parts[0].text
-                remove("/tmp/temp_image.jpg", "/tmp/temp_audio.mp3")
-                convo.send_message(f"This is an voice/image message from user transcribed by an llm model, reply to the user based on the transcription: {answer}")
-                send(convo.last.text)
-                files = genai.list_files()
-                for file in files:
+                    send("This format is not supported by the bot ☹")
+                
+                # 清理上傳的文件
+                for file in genai.list_files():
                     file.delete()
-        except:
-            pass
+        except Exception as e:
+            print(f"Error processing webhook: {str(e)}")
         return jsonify({"status": "ok"}), 200
 if __name__ == "__main__":
     app.run(debug=True, port=8000)
