@@ -200,9 +200,9 @@ def remove(*file_paths):
 #response = process_user_input(user_input)
 #send(response)
 
-@app.route("/",methods=["GET","POST"])
-def index():
-    return "Bot"
+#@app.route("/",methods=["GET","POST"])
+#def index():
+#    return "Bot"
 
 @app.route("/webhook", methods=["GET", "POST"])
 def webhook():
@@ -219,11 +219,11 @@ def webhook():
             data = request.get_json()["entry"][0]["changes"][0]["value"]["messages"][0]
             webhook_data = request.get_json()
             sender_phone = extract_sender_phone(webhook_data)
-	    sendtest("abcd",sender_phone)
             if data["type"] == "text":
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
-		send(answer)
+                sendtest("abcd", sender_phone)
+                send(response, sender_phone)
             else:
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
                 headers = {'Authorization': f'Bearer {wa_token}'}
