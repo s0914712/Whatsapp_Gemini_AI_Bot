@@ -40,7 +40,21 @@ def extract_gcal_info(text):
 
     return gcal_list, title, date, location, desc
 
-
+def extract_sender_phone(webhook_data):
+    try:
+        # 從 webhook 數據中提取訊息部分
+        message = webhook_data["entry"][0]["changes"][0]["value"]["messages"][0]
+        
+        # 提取發送者的電話號碼
+        sender_phone = message["from"]
+        
+        return sender_phone
+    except KeyError:
+        # 如果無法找到預期的鍵，返回 None
+        return None
+    except IndexError:
+        # 如果列表索引超出範圍，返回 None
+        return None
 
 def process_date(date_str):
     # 如果日期字符串為空或 'TBC'，返回當前時間加一小時
@@ -160,7 +174,7 @@ def sendtest(answer,phone):
     
     response=requests.post(url, headers=headers,json=data)
     return response
-def send(answer,phone):
+def send(answer):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers={
         'Authorization': f'Bearer {wa_token}',
@@ -208,6 +222,7 @@ def webhook():
             if data["type"] == "text":
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
+		send(answer)
                 sendtest("abcd",sender_phone)
             else:
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
