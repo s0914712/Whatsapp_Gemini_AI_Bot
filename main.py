@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 wa_token=os.environ.get("WA_TOKEN")
 genai.configure(api_key=os.environ.get("GEN_API"))
 phone_id=os.environ.get("PHONE_ID")
-phone=os.environ.get("PHONE_NUMBER")
+#phone=os.environ.get("PHONE_NUMBER")
 name="Your name or nickname" #The bot will consider this person as its owner or creator
 bot_name="Give a name to your bot" #This will be the name of your bot, eg: "Hello I am Astro Bot"
 model_name="gemini-1.5-flash-latest" #Switch to "gemini-1.0-pro" or any free model, if "gemini-1.5-flash" becomes paid in future.
@@ -159,7 +159,7 @@ def delete_strings(s):
     return s
 
 
-def sendtest(answer,phone):
+def sendtest(answer,phone5):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers={
         'Authorization': f'Bearer {wa_token}',
@@ -167,14 +167,14 @@ def sendtest(answer,phone):
     }
     data={
           "messaging_product": "whatsapp", 
-          "to": f"{phone}", 
+          "to": f"{phone5}", 
           "type": "text",
-          "text":{"body": f"{phone_id}"},
+          "text":{"body": f"{phone5}"},
           }
     
     response=requests.post(url, headers=headers,json=data)
     return response
-def send(answer):
+def send(answer, sender_phone):
     url=f"https://graph.facebook.com/v18.0/{phone_id}/messages"
     headers={
         'Authorization': f'Bearer {wa_token}',
@@ -182,7 +182,7 @@ def send(answer):
     }
     data={
           "messaging_product": "whatsapp", 
-          "to": f"{phone}", 
+          "to": f"{sender_phone}", 
           "type": "text",
           "text":{"body": f"{answer}"},
           }
@@ -223,7 +223,7 @@ def webhook():
                 prompt = data["text"]["body"]
                 response = process_user_input(prompt)
                 sendtest("abcd", sender_phone)
-                send(response)  # 修復：移除多餘的參數
+                send(response, sender_phone)  # 修復：移除多餘的參數
             else:
                 # 處理媒體消息
                 media_url_endpoint = f'https://graph.facebook.com/v18.0/{data[data["type"]]["id"]}/'
